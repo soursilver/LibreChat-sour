@@ -1,56 +1,67 @@
 import React, { useState, useRef } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
-import { MessageSquare, Command } from 'lucide-react';
+import { MessageSquare, Command, PlusCircle } from 'lucide-react'; // <--- ADDED: PlusCircle icon
 import { SettingsTabValues } from 'librechat-data-provider';
 import type { TDialogProps } from '~/common';
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react';
 import { GearIcon, DataIcon, SpeechIcon, UserIcon, ExperimentIcon } from '~/components/svg';
-import { General, Chat, Speech, Beta, Commands, Data, Account } from './SettingsTabs';
+// <--- ADDED: Import the new AddModels component (needs exporting from SettingsTabs/index.ts)
+import { General, Chat, Speech, Beta, Commands, Data, Account, AddModels } from './SettingsTabs';
 import { useMediaQuery, useLocalize, TranslationKeys } from '~/hooks';
 import { cn } from '~/utils';
+
+// <--- ADDED: Define a constant for the new tab value (as it's not in SettingsTabValues)
+const API_SETTINGS_TAB_VALUE = 'apiSettings';
 
 export default function Settings({ open, onOpenChange }: TDialogProps) {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const localize = useLocalize();
-  const [activeTab, setActiveTab] = useState(SettingsTabValues.GENERAL);
+  // <--- MODIFIED: Adjusted type slightly to allow the new string value alongside the enum
+  const [activeTab, setActiveTab] = useState<SettingsTabValues | typeof API_SETTINGS_TAB_VALUE>(
+    SettingsTabValues.GENERAL,
+  );
   const tabRefs = useRef({});
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
+    // <--- ADDED: Include the new AddModels tab value in the navigation array
     const tabs = [
       SettingsTabValues.GENERAL,
       SettingsTabValues.CHAT,
+      API_SETTINGS_TAB_VALUE,
       SettingsTabValues.BETA,
       SettingsTabValues.COMMANDS,
       SettingsTabValues.SPEECH,
       SettingsTabValues.DATA,
       SettingsTabValues.ACCOUNT,
+      //API_SETTINGS_TAB_VALUE, // <-- New value added here
     ];
     const currentIndex = tabs.indexOf(activeTab);
 
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        setActiveTab(tabs[(currentIndex + 1) % tabs.length]);
+        setActiveTab(tabs[(currentIndex + 1) % tabs.length] as SettingsTabValues | typeof API_SETTINGS_TAB_VALUE);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        setActiveTab(tabs[(currentIndex - 1 + tabs.length) % tabs.length]);
+        setActiveTab(tabs[(currentIndex - 1 + tabs.length) % tabs.length] as SettingsTabValues | typeof API_SETTINGS_TAB_VALUE);
         break;
       case 'Home':
         event.preventDefault();
-        setActiveTab(tabs[0]);
+        setActiveTab(tabs[0] as SettingsTabValues | typeof API_SETTINGS_TAB_VALUE);
         break;
       case 'End':
         event.preventDefault();
-        setActiveTab(tabs[tabs.length - 1]);
+        setActiveTab(tabs[tabs.length - 1] as SettingsTabValues | typeof API_SETTINGS_TAB_VALUE);
         break;
     }
   };
 
+  // <--- MODIFIED: Adjusted type slightly for the array elements' value property
   const settingsTabs: {
-    value: SettingsTabValues;
+    value: SettingsTabValues | string; // Allow string for the new label
     icon: React.JSX.Element;
-    label: TranslationKeys;
+    label: TranslationKeys | string; 
   }[] = [
     {
       value: SettingsTabValues.GENERAL,
@@ -61,6 +72,12 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       value: SettingsTabValues.CHAT,
       icon: <MessageSquare className="icon-sm" />,
       label: 'com_nav_setting_chat',
+    },
+    // <--- ADDED: New entry for the AddModels Tab Trigger
+    {
+        value: API_SETTINGS_TAB_VALUE,
+        icon: <PlusCircle className="icon-sm" />, // Using the imported KeyRound icon
+        label: 'com_ui_select_model_provider', // Use a localization key (add this key to your locale files!) or a temporary string 'API Settings'
     },
     {
       value: SettingsTabValues.BETA,
@@ -90,7 +107,8 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
   ];
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value as SettingsTabValues);
+    // <--- MODIFIED: Cast the incoming string value to the allowed union type for setActiveTab
+    setActiveTab(value as SettingsTabValues | typeof API_SETTINGS_TAB_VALUE);
   };
 
   return (
@@ -106,7 +124,6 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
         >
           <div className="fixed inset-0 bg-black opacity-50 dark:opacity-80" aria-hidden="true" />
         </TransitionChild>
-
         <TransitionChild
           enter="ease-out duration-200"
           enterFrom="opacity-0 scale-95"
@@ -181,7 +198,8 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                         ref={(el) => (tabRefs.current[value] = el)}
                       >
                         {icon}
-                        {localize(label)}
+                        {/* // <--- MODIFIED: Cast label to TranslationKeys, assuming new label is added there */}
+                        {localize(label as TranslationKeys)}
                       </Tabs.Trigger>
                     ))}
                   </Tabs.List>
@@ -207,6 +225,11 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     <Tabs.Content value={SettingsTabValues.ACCOUNT}>
                       <Account />
                     </Tabs.Content>
+                    {/* <--- ADDED: New Tabs.Content section for the ApiSettings component */}
+                    <Tabs.Content value={API_SETTINGS_TAB_VALUE}>
+                      <AddModels />
+                    </Tabs.Content>
+                    {/* END ADDED --- */}
                   </div>
                 </Tabs.Root>
               </div>
@@ -217,3 +240,6 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
     </Transition>
   );
 }
+// <--- REMINDER: The duplicate import and component definition below this line in your original code should be removed.
+// import React, { useState, useRef } from 'react';
+// ... (rest of duplicated code) ...
